@@ -1,6 +1,7 @@
 # Route Optimizer
 
 A web-based route optimization tool designed for service professionals, delivery personnel, and field technicians to efficiently plan their daily routes across Canada.
+<img width="380" height="856" alt="captureit_7-18-2025_at_00-15-53" src="https://github.com/user-attachments/assets/d6993c02-fcd6-4d01-8e0f-25c47152aa22" />
 
 ## 🎯 Purpose
 
