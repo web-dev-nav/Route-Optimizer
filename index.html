@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Route Optimizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2v53yalFYtB1R2QqZ4MNCWpHkv57MUXM&libraries=places"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <div class="container mx-auto px-4 py-8 flex-grow">
+    <div class="max-w-2xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Route Optimizer</h1>
+      
+      
+       <!-- Video Modal Button -->
+      <div class="text-center mb-6">
+        <button 
+          id="openVideoModal" 
+          class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition duration-300 flex items-center justify-center mx-auto space-x-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span>Watch Tutorial Video</span>
+        </button>
+      </div>
+
+      <!-- Video Modal -->
+      <div 
+        id="videoModal" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden overflow-y-auto p-4"
+      >
+        <div class="bg-white rounded-lg overflow-hidden shadow-xl w-full max-w-3xl relative">
+          <button 
+            id="closeVideoModal" 
+            class="absolute top-2 right-2 text-gray-600 hover:text-gray-900 z-60 bg-white rounded-full p-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <div class="p-4">
+            <div class="aspect-w-16 aspect-h-9">
+              <iframe 
+                id="tutorialVideo" 
+                class="w-full h-full"
+                src="https://www.youtube.com/embed/fYf3jvwqRt4?si=Pm-aBLKZ0-dVYxzF" 
+                title="Route Optimizer Tutorial" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      
+      
+      
+      <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <form id="routeForm">
+          <div class="mb-4">
+            <label for="origin" class="block text-gray-700 font-bold mb-2">Your Starting Location:</label>
+            <div id="locationError" class="text-red-500 mb-2"></div>
+            <input 
+              type="text" 
+              id="origin" 
+              placeholder="Enter your starting address" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+          
+          <div class="mb-4">
+            <button 
+              type="button" 
+              id="useCurrentLocation" 
+              class="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition duration-300 mb-4"
+            >
+              Use Current Location
+            </button>
+          </div>
+
+          <div class="mb-4">
+            <label for="travelMode" class="block text-gray-700 font-bold mb-2">Travel Mode:</label>
+            <select 
+              id="travelMode" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="DRIVING">Driving</option>
+              <option value="WALKING">Walking</option>
+              <option value="BICYCLING">Bicycling</option>
+            </select>
+          </div>
+          
+          <div id="customerContainer" class="mb-4 space-y-4">
+            <div class="customer-field flex items-center space-x-2">
+              <input 
+                type="text" 
+                class="customer flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                placeholder="Enter customer address" 
+                required
+              >
+            </div>
+          </div>
+          
+          <div class="flex space-x-4 mb-4">
+            <button 
+              type="button" 
+              id="addCustomer" 
+              class="flex-1 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-300"
+            >
+              Add Customer
+            </button>
+            <button 
+              type="button" 
+              id="optimizeRoute" 
+              class="flex-1 bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition duration-300"
+            >
+              Optimize Route
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div 
+        id="locationDebug" 
+        class="bg-gray-100 border border-gray-300 rounded-md p-4 text-sm text-gray-700 mb-6 hidden"
+      ></div>
+
+      <div 
+        id="map" 
+        class="w-full h-96 bg-gray-200 rounded-lg shadow-md mb-6"
+      ></div>
+      
+      <div 
+        id="routeDetails" 
+        class="bg-white shadow-md rounded-lg p-6"
+      ></div>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto px-4">
+      <!--<div class="flex flex-col md:flex-row justify-between items-center">-->
+      <!--  <div class="text-center md:text-left mb-4 md:mb-0">-->
+      <!--    <h3 class="text-xl font-bold mb-2">Computer Repair Route Optimizer</h3>-->
+      <!--    <p class="text-gray-400">Efficiently plan your daily repair routes across Canada</p>-->
+      <!--  </div>-->
+      <!--</div>-->
+      <div class="text-center text-gray-500 mt-4 border-t border-gray-700 pt-4">
+        <p>&copy; 2024 Route Optimizer. All Rights Reserved.</p>
+        <p class="text-sm mt-2">Designed for Service Professionals and Delivery Personnel by Navjot, Email for suggestion and improvements: <a href="mailto:">web.dev.nav@gmail.com</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let map, directionsService, directionsRenderer, originAutocomplete;
+    const customerFields = [];
+    let currentLocation = null;
+
+   function initializeMap() {
+      // Initialize the map centered on Canada
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 56.1304, lng: -106.3468 }, // Centered on Canada
+        zoom: 4,
+        streetViewControl: false,
+        mapTypeControl: false,
+      });
+    
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer();
+      directionsRenderer.setMap(map);
+    
+      // Initialize autocomplete for origin with Canada-only restriction
+      originAutocomplete = new google.maps.places.Autocomplete(document.getElementById("origin"), {
+        types: ["geocode"],
+        componentRestrictions: { country: "ca" } // Restrict to Canada
+      });
+    
+      initializeCustomerAutocomplete();
+      setupCurrentLocationButton();
+    
+      // Add listener to ensure only Canadian addresses are selected
+      originAutocomplete.addListener('place_changed', function() {
+        const place = originAutocomplete.getPlace();
+        if (!isCanadianAddress(place)) {
+          alert("Please enter a Canadian address only.");
+          document.getElementById("origin").value = "";
+        }
+      });
+    }
+    
+    
+    
+     // Video Modal JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+      const openModalBtn = document.getElementById('openVideoModal');
+      const closeModalBtn = document.getElementById('closeVideoModal');
+      const videoModal = document.getElementById('videoModal');
+
+      openModalBtn.addEventListener('click', function() {
+        videoModal.classList.remove('hidden');
+      });
+
+      closeModalBtn.addEventListener('click', function() {
+        videoModal.classList.add('hidden');
+      });
+
+      // Close modal if clicking outside the video
+      videoModal.addEventListener('click', function(event) {
+        if (event.target === videoModal) {
+          videoModal.classList.add('hidden');
+        }
+      });
+    });
+
+    function setupCurrentLocationButton() {
+      const useCurrentLocationBtn = document.getElementById("useCurrentLocation");
+      const locationErrorDiv = document.getElementById("locationError");
+    
+      useCurrentLocationBtn.addEventListener("click", () => {
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const currentLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+    
+              // Reverse geocode to check if location is in Canada
+              const geocoder = new google.maps.Geocoder();
+              geocoder.geocode(
+                { location: currentLocation }, 
+                (results, status) => {
+                  if (status === "OK") {
+                    if (results[0]) {
+                      // Verify the location is in Canada
+                      const isCanadian = results[0].address_components.some(
+                        component => 
+                          component.types.includes("country") && 
+                          component.short_name === "CA"
+                      );
+    
+                      if (isCanadian) {
+                        document.getElementById("origin").value = results[0].formatted_address;
+                        
+                        // Center and zoom the map
+                        map.setCenter(currentLocation);
+                        map.setZoom(10);
+    
+                        // Add a marker for current location
+                        new google.maps.Marker({
+                          position: currentLocation,
+                          map: map,
+                          title: "Your Current Location",
+                          icon: {
+                            url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                          }
+                        });
+                      } else {
+                        locationErrorDiv.textContent = "Current location is not in Canada. Please enter a Canadian address manually.";
+                      }
+                    }
+                  } else {
+                    locationErrorDiv.textContent = "Could not retrieve address for this location.";
+                  }
+                }
+              );
+            },
+            (error) => {
+              // Enhanced error callback with debug information
+              debugInfo.push(
+                `Error Code: ${error.code}`,
+                `Error Message: ${error.message}`
+              );
+
+              useCurrentLocationBtn.disabled = false;
+              useCurrentLocationBtn.textContent = "Use Current Location";
+              
+              switch(error.code) {
+                case error.PERMISSION_DENIED:
+                  locationErrorDiv.textContent = "Location access denied. Please enter address manually.";
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  locationErrorDiv.textContent = "Location information unavailable. Check your GPS and network connection.";
+                  break;
+                case error.TIMEOUT:
+                  locationErrorDiv.textContent = "Location request timed out. Please try again.";
+                  break;
+                default:
+                  locationErrorDiv.textContent = "An unknown error occurred while fetching location.";
+              }
+
+              // Show debug info
+              locationDebugDiv.textContent = debugInfo.join('\n');
+              locationDebugDiv.classList.remove('hidden');
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            }
+          );
+        } else {
+          locationErrorDiv.textContent = "Geolocation is not supported by this browser.";
+        }
+      });
+    }
+
+   function initializeCustomerAutocomplete() {
+      const customerInputs = document.querySelectorAll(".customer");
+      customerInputs.forEach((input) => {
+        if (!input.dataset.autocompleteInitialized) {
+          const customerAutocomplete = new google.maps.places.Autocomplete(input, { 
+            types: ["geocode"],
+            componentRestrictions: { country: "ca" } // Restrict to Canada
+          });
+    
+          // Add listener to validate Canadian address
+          customerAutocomplete.addListener('place_changed', function() {
+            const place = customerAutocomplete.getPlace();
+            if (!isCanadianAddress(place)) {
+              alert("Please enter a Canadian address only.");
+              input.value = "";
+            }
+          });
+    
+          input.dataset.autocompleteInitialized = true;
+          customerFields.push(input);
+        }
+      });
+    }
+    
+    function isCanadianAddress(place) {
+      if (!place || !place.address_components) return false;
+    
+      // Check if any of the address components indicate a Canadian location
+      return place.address_components.some(component => 
+        component.types.includes("country") && 
+        component.short_name === "CA"
+      );
+    }
+
+
+    function setupAddressRemoval() {
+      const customerContainer = document.getElementById("customerContainer");
+    
+      customerContainer.addEventListener("click", (event) => {
+        // Check if the click was on a removal button
+        if (event.target.classList.contains('remove-customer')) {
+          // Remove the entire customer field
+          const customerField = event.target.closest('.customer-field');
+          customerField.remove();
+    
+          // Update the customerFields array
+          const updatedInputs = document.querySelectorAll(".customer");
+          customerFields.length = 0; // Clear the existing array
+          updatedInputs.forEach(input => customerFields.push(input));
+    
+          // Reinitialize autocomplete for remaining fields
+          initializeCustomerAutocomplete();
+    
+          // If there are customers, automatically re-optimize the route
+          const customers = customerFields.map((input) => input.value).filter((value) => value);
+          const origin = document.getElementById("origin").value;
+          const travelMode = document.getElementById("travelMode").value;
+    
+          if (origin && customers.length > 0) {
+            // Clear previous route
+            directionsRenderer.setDirections({ routes: [] });
+    
+            // Trigger route optimization
+            findOptimizedRoute(origin, customers, travelMode)
+              .then(optimizedRoute => {
+                displayOptimizedRoute(origin, optimizedRoute, travelMode);
+              })
+              .catch(error => {
+                console.error("Error re-optimizing route:", error);
+                alert("An error occurred while updating the route.");
+              });
+          }
+        }
+      });
+    }
+
+    document.getElementById("addCustomer").addEventListener("click", () => {
+      const container = document.getElementById("customerContainer");
+      const newField = document.createElement("div");
+      newField.className = "customer-field flex items-center space-x-2";
+    
+      const newInput = document.createElement("input");
+      newInput.type = "text";
+      newInput.className = "customer flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+      newInput.placeholder = "Enter customer address";
+      newInput.required = true;
+    
+      const removeButton = document.createElement("button");
+      removeButton.textContent = "✖";
+      removeButton.className = "remove-customer bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600";
+      removeButton.type = "button";
+    
+      newField.appendChild(newInput);
+      newField.appendChild(removeButton);
+      container.appendChild(newField);
+    
+      initializeCustomerAutocomplete();
+    });
+
+    document.getElementById("optimizeRoute").addEventListener("click", async () => {
+      const origin = document.getElementById("origin").value;
+      const travelMode = document.getElementById("travelMode").value;
+      const customers = customerFields.map((input) => input.value).filter((value) => value);
+
+      if (!origin || customers.length === 0) {
+        alert("Please provide a starting location and at least one customer address.");
+        return;
+      }
+
+      try {
+        const optimizedRoute = await findOptimizedRoute(origin, customers, travelMode);
+        displayOptimizedRoute(origin, optimizedRoute, travelMode);
+      } catch (error) {
+        console.error("Error finding optimized route:", error);
+        alert("An error occurred. Please try again.");
+      }
+    });
+
+    async function findOptimizedRoute(origin, customers, travelMode) {
+      return new Promise((resolve, reject) => {
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+          {
+            origins: [origin, ...customers],
+            destinations: [origin, ...customers],
+            travelMode: travelMode,
+          },
+          (response, status) => {
+            if (status !== "OK") {
+              return reject(new Error("DistanceMatrixService failed with status: " + status));
+            }
+
+            // Create distance matrix
+            const distanceMatrix = response.rows.map(row => 
+              row.elements.map(element => element.distance.value)
+            );
+
+            // Track visited and unvisited customers
+            const unvisited = customers.map((_, index) => index);
+            const route = [];
+            let currentLocation = 0; // Start with origin
+
+            while (unvisited.length > 0) {
+              // Find the closest unvisited customer
+              const closestIndex = unvisited.reduce((closest, current) => 
+                distanceMatrix[currentLocation][current + 1] < 
+                distanceMatrix[currentLocation][closest + 1] ? current : closest
+              );
+
+              // Add closest customer to route
+              route.push(customers[closestIndex]);
+              
+              // Update current location to this customer
+              currentLocation = unvisited.indexOf(closestIndex) + 1;
+              
+              // Remove the visited customer
+              unvisited.splice(unvisited.indexOf(closestIndex), 1);
+            }
+
+            resolve(route);
+          }
+        );
+      });
+    }
+
+    function displayOptimizedRoute(origin, optimizedRoute, travelMode) {
+      const routeDetailsElement = document.getElementById('routeDetails');
+      routeDetailsElement.innerHTML = '<h2 class="text-2xl font-bold mb-4">Optimized Route Order:</h2>';
+
+      // Create waypoints for directions
+      const waypoints = optimizedRoute.map(customer => ({
+        location: customer,
+        stopover: true
+      }));
+
+      // Request directions with optimized route
+      directionsService.route(
+        {
+          origin: origin,
+          destination: optimizedRoute[optimizedRoute.length - 1],
+          waypoints: waypoints.slice(0, -1),
+          travelMode: travelMode,
+          optimizeWaypoints: true
+        },
+        (response, status) => {
+          if (status === "OK") {
+            // Display the route on the map
+            directionsRenderer.setDirections(response);
+
+            // Display route details
+            const legs = response.routes[0].legs;
+            routeDetailsElement.innerHTML = `
+              <h2 class="text-2xl font-bold mb-4">Optimized Route Order:</h2>
+              <p class="mb-4"><strong>Start from:</strong> ${origin}</p>
+            `;
+            
+            legs.forEach((leg, index) => {
+              // Calculate tooltip with distance from previous location
+              let distanceTooltip = index === 0 
+                ? `(${leg.distance.text} from origin)` 
+                : `(${leg.distance.text} from previous location)`;
+
+              routeDetailsElement.innerHTML += `
+                <div class="bg-gray-100 p-4 rounded-md mb-4">
+                  <p class="font-semibold">
+                    <strong>Stop ${index + 1}:</strong> 
+                    ${leg.end_address} 
+                    <span class="text-gray-600 text-sm">${distanceTooltip}</span>
+                  </p>
+                  <p class="text-gray-700">Duration: ${leg.duration.text}</p>
+                </div>
+              `;
+            });
+          } else {
+            console.error("DirectionsService failed with status: " + status);
+            alert("Could not display route. Please try again.");
+          }
+        }
+      );
+    }
+
+    setupAddressRemoval();
+    google.maps.event.addDomListener(window, "load", initializeMap);
+  </script>
+</body>
+</html>
